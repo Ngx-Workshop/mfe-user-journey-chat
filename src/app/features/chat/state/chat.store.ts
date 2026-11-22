@@ -2,7 +2,7 @@ import { DestroyRef, Injectable, computed, effect, inject, signal } from '@angul
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { EMPTY, Observable, Subject, catchError, finalize, switchMap, tap } from 'rxjs';
 import { ChatApiService } from '../api/chat-api.service';
-import type { ChatEventDto, ConversationDto } from '../models/chat.models';
+import type { ChatEventDto, ConversationDto, UiActionIntent } from '../models/chat.models';
 import { ChatConnectionService } from './chat-connection.service';
 
 @Injectable({ providedIn: 'root' })
@@ -81,6 +81,9 @@ export class ChatStore {
   }
   send$(conversationId: string, clientMessageId: string, text: string) {
     return this.connection.command$({ type: 'send_message', requestId: crypto.randomUUID(), conversationId, clientMessageId, text });
+  }
+  uiAction$(intent: UiActionIntent, clientMessageId: string) {
+    return this.connection.command$({ type: 'ui_action', requestId: crypto.randomUUID(), conversationId: this.current()!.id, clientMessageId, ...intent });
   }
   cancel$() {
     const current = this.current()!;

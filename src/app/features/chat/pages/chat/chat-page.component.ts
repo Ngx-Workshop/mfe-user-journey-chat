@@ -45,14 +45,19 @@ import { ChatComposerComponent } from '../../components/composer/chat-composer.c
         @if (vm.error()) { <div class="chat__error" role="alert">{{ vm.error() }}</div> }
         @if (vm.busy()) { <mat-progress-bar mode="indeterminate" aria-label="Opening conversation" /> }
         @if (vm.current(); as current) {
-          <ngx-chat-message-feed [messages]="current.messages" />
+          <ngx-chat-message-feed [messages]="current.messages" [disabled]="!vm.canInteract()" (action)="vm.interact($event)" />
           <ngx-chat-composer [form]="vm.form" [enabled]="vm.canSend()" [connected]="vm.connection() === 'connected'"
             [sending]="vm.sending()" [running]="!!vm.activeRun()" [stopping]="vm.stopping()"
             (send)="vm.send()" (stop)="vm.cancel()" />
         } @else {
           <div class="chat__welcome"><mat-icon aria-hidden="true">auto_awesome</mat-icon>
-            <h2>A little curiosity goes a long way.</h2><p>Start a conversation to explore ideas and learn at your own pace.</p>
+            <h2>A little curiosity goes a long way.</h2><p>Learn through guided plans, quick practice, and workshops picked for your goals.</p>
             <button mat-flat-button [disabled]="vm.busy() || vm.connection() !== 'connected'" (click)="vm.create()">Start a conversation</button>
+            <div class="chat__suggestions" aria-label="Ways to get started">
+              <button mat-stroked-button [disabled]="vm.busy() || vm.connection() !== 'connected'" (click)="vm.create('Build an interactive 20-minute Angular dependency injection learning checklist.')">Build a learning plan</button>
+              <button mat-stroked-button [disabled]="vm.busy() || vm.connection() !== 'connected'" (click)="vm.create('Give me an interactive Angular dependency injection practice quiz.')">Quiz my understanding</button>
+              <button mat-stroked-button [disabled]="vm.busy() || vm.connection() !== 'connected'" (click)="vm.create('Find published Angular workshops and show me the learning options.')">Explore workshops</button>
+            </div>
           </div>
         }
       </main>
@@ -83,6 +88,7 @@ import { ChatComposerComponent } from '../../components/composer/chat-composer.c
     .chat__welcome { display: grid; place-content: center; justify-items: center; flex: 1; text-align: center; padding: 2rem; }
     .chat__welcome p { max-width: 28rem; line-height: 1.6; color: var(--mat-sys-on-surface-variant, #666); }
     .chat__welcome > mat-icon { color: var(--mat-sys-primary, #405cb5); font-size: 2.5rem; width: 2.5rem; height: 2.5rem; }
+    .chat__suggestions { display: flex; flex-wrap: wrap; justify-content: center; gap: .75rem; margin-top: 1.5rem; }
     .chat__error { padding: .75rem 1rem; color: var(--mat-sys-error, #b3261e); font-size: .85rem; }
     @media (max-width: 800px) {
       .chat { grid-template-columns: minmax(0, 1fr); height: calc(100dvh - 7rem); }
