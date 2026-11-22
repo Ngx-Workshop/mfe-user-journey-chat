@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, ElementRef, afterRenderEffect, input, viewChild } from '@angular/core';
+import { A2uiSurfaceComponent } from '../a2ui/a2ui-surface.component';
+import { ChangeDetectionStrategy, Component, ElementRef, afterRenderEffect, input, output, viewChild } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import type { ChatMessageDto } from '../../models/chat.models';
+import type { ChatMessageDto, UiActionIntent } from '../../models/chat.models';
 
 @Component({
   selector: 'ngx-chat-message-feed',
-  imports: [DatePipe],
+  imports: [DatePipe, A2uiSurfaceComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="feed" #feed role="log" aria-label="Conversation messages" aria-live="polite"
@@ -22,7 +23,10 @@ import type { ChatMessageDto } from '../../models/chat.models';
             @switch (part.kind) {
               @case ('text') { <p class="feed__text">{{ part.text }}</p> }
               @case ('tool') { <p class="feed__activity">{{ part.text || 'Tool activity' }}</p> }
-              @case ('a2ui') { <p class="feed__activity">Interactive content will be supported here in a future update.</p> }
+              @case ('a2ui') {
+                @if (part.ui; as ui) { <ngx-chat-learning-surface [ui]="ui" [messageId]="message.id" [disabled]="disabled()" (action)="action.emit($event)" /> }
+                @else { <p class="feed__activity">{{ part.text || 'This saved interactive content is unavailable. Ask for a fresh explanation.' }}</p> }
+              }
             }
           }
           @if (message.status === 'streaming') { <p class="feed__status" role="status">Responding…</p> }
@@ -47,6 +51,8 @@ import type { ChatMessageDto } from '../../models/chat.models';
   `],
 })
 export class MessageFeedComponent {
+  readonly disabled = input(false);
+  readonly action = output<UiActionIntent>();
   readonly messages = input.required<ChatMessageDto[]>();
   private readonly feed = viewChild<ElementRef<HTMLElement>>('feed');
   private follow = true;

@@ -1,3 +1,6 @@
+import { DOCUMENT } from '@angular/common';
+import { Router } from '@angular/router';
+import type { UiActionIntent } from '../../models/chat.models';
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -19,9 +22,15 @@ export class ChatViewModel {
   readonly stopping = signal(false);
   readonly error = signal('');
   readonly form = new FormGroup({ text: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(8000)] }) });
-  readonly canSend = computed(() => this.connection() === 'connected' && !!this.current() && !this.activeRun() && !this.sending() && !this.busy());
+  readonly canSend = computed(() => this.connection() === 'connected' && !!this.current() && !this.activeRun() && !this.sending() && !this.busy() && !this.interacting());
+  readonly canInteract = computed(() => this.connection() === 'connected' && !this.activeRun() && !this.sending() && !this.busy() && !this.interacting());
   private readonly sends = new Subject<void>();
-  private readonly creates = new Subject<void>();
+  private readonly creates = new Subject<string | undefined>();
+  private readonly interactions = new Subject<UiActionIntent>();
+  readonly interacting = signal(false);
+  private readonly router = inject(Router, { optional: true });
+  private readonly document = inject(DOCUMENT);
+  private uiRetry?: { key: string; id: string };
   private readonly selections = new Subject<string>();
   private readonly cancels = new Subject<void>();
   private retry?: { conversationId: string; text: string; id: string };
@@ -42,9 +51,9 @@ export class ChatViewModel {
         finalize(() => this.sending.set(false)),
       );
     }), takeUntilDestroyed()).subscribe();
-    this.creates.pipe(exhaustMap(() => {
+    this.creates.pipe(exhaustMap(prompt => {
       this.saveDraft(); this.busy.set(true); this.error.set('');
-      return this.store.create$().pipe(tap(() => this.restoreDraft()),
+      return this.store.create$().pipe(tap(() => { this.restoreDraft(); if (prompt) { this.form.controls.text.setValue(prompt); queueMicrotask(() => this.send()); } }),
         catchError(() => { this.error.set('Could not create a conversation. Please retry.'); return EMPTY; }),
         finalize(() => this.busy.set(false)));
     }), takeUntilDestroyed()).subscribe();
@@ -61,11 +70,33 @@ export class ChatViewModel {
       return this.store.cancel$().pipe(catchError(() => { this.error.set('Could not stop the response. Reconnect and try again.'); return EMPTY; }),
         finalize(() => this.stopping.set(false)));
     }), takeUntilDestroyed()).subscribe();
+    this.interactions.pipe(exhaustMap(intent => {
+      if (!this.canInteract()) return EMPTY;
+      const message = this.current()?.messages.find(item => item.id === intent.messageId);
+      const ui = message?.parts.find(part => part.ui?.surfaceId === intent.surfaceId)?.ui;
+      const action = ui?.actions.find(item => item.id === intent.actionId);
+      if (!action) return EMPTY;
+      if (action.type === 'navigate') {
+        if (action.path && /^\/workshops\/overview\?workshop=[a-f0-9]{24}$/i.test(action.path)) {
+          if (this.router) void this.router.navigateByUrl(action.path); else this.document.location.assign(action.path);
+        }
+        return EMPTY;
+      }
+      this.error.set(''); this.interacting.set(true);
+      const key = JSON.stringify(intent);
+      if (this.uiRetry?.key !== key) this.uiRetry = { key, id: crypto.randomUUID() };
+      return this.store.uiAction$(intent,this.uiRetry.id).pipe(
+        tap(() => { this.uiRetry = undefined; }),
+        catchError(error => { this.error.set(error.message || 'Could not update this learning activity. Please retry.'); return EMPTY; }),
+        finalize(() => this.interacting.set(false)),
+      );
+    }), takeUntilDestroyed()).subscribe();
     this.store.start();
     this.destroyRef.onDestroy(() => this.store.stop());
   }
   send() { this.sends.next(); }
-  create() { if (!this.sending() && !this.busy()) this.creates.next(); }
+  create(prompt?: string) { if (!this.sending() && !this.busy()) this.creates.next(prompt); }
+  interact(intent: UiActionIntent) { this.interactions.next(intent); }
   select(id: string) { if (!this.sending() && !this.busy()) this.selections.next(id); }
   cancel() { this.cancels.next(); }
   reconnect() { this.store.reconnect(); }

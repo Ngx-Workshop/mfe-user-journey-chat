@@ -19,3 +19,5 @@ the largest folder number is not automatically the active feature.
 - [002-static-deployment-cleanup](002-static-deployment-cleanup/spec.md): Static deployment cleanup; helper tests, Actions rollout and live Nginx entrypoints verified.
 
 - [003 Chat foundation](003-chat-foundation/spec.md): Deployed; live UI smoke test pending.
+
+- [004 A2UI learning](004-a2ui-learning/spec.md): In progress.
