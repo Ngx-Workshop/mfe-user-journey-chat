@@ -19,6 +19,8 @@ jobs:
       - name: Install pinned official A2UI packages
         run: |
           cp package-lock.json /tmp/previous-lock.json
+          npm view @a2ui/lit version
+          npm view @a2ui/web_core version
           npm install --ignore-scripts --save-exact @a2ui/lit @a2ui/web_core
           python3 - <<'PY'
           import json, tarfile
