@@ -1,89 +1,58 @@
-# Architecture and external context
+# Chat MFE architecture
 
-Updated 2026-10-09 for [001 MVVM starter](../specs/001-mvvm-starter/spec.md).
-The executable seed demonstrates example-document list/search/create/edit/delete.
-It owns this journey; shell, gateway, auth and backend data are external owners.
+The remote owns the chat user journey. The shell owns global navigation/session,
+the orchestrator loads the remote, and service-ai-chat owns conversation data,
+authorization and response runs. No nested remotes or browser model credentials.
 
-## Source map
+## Source map and data flow
+features/chat/api/chat-api.service.ts is stateless HTTP transport using generated
+contracts. state/chat-connection.service.ts owns WebSocket lifecycle, one-use HTTP
+tickets, request correlation, uncertain delivery and bounded reconnect. Stateful
+transport intentionally lives in state/ rather than the stateless API directory.
+state/chat.store.ts owns shared conversation snapshots, revision ordering and
+read orchestration. pages/chat/chat.view-model.ts owns scoped typed forms/drafts,
+command streams and view errors. pages/chat/chat-page.component.ts composes the
+sidebar, header, message feed and composer. Presentation components have typed
+inputs/intent outputs and no API/store dependencies. Tests mirror this tree under
+testing/app; fixtures live under testing/fixtures.
 
-```text
-src/app/
-  app.ts / app.config.ts / app.routes.ts
-  features/example-documents/
-    api/                  # stateless ExampleCrudApiService
-    models/               # generated DTO exports, dialog/form types
-    state/                # singleton ExampleDocumentsStore
-    forms/                # stateless typed ExampleFormService
-    utils/                # user-facing API error mapping
-    pages/catalog/        # catalog orchestration + scoped CatalogViewModel
-    components/
-      document-card/      # typed card presentation
-      document-form/      # document/address form presentations
-      editor/             # dialog orchestration + scoped EditorViewModel
-testing/
-  app/                    # mirrors source app/features folders
-  fixtures/               # synthetic test-only DTOs
-scripts/check-architecture.mjs
-```
+All components use OnPush, inline HTML/SCSS, BEM and Material/theme tokens. RxJS
+switchMap handles replaceable reads; exhaustMap prevents duplicate sends/creates/
+cancels; teardown is tied to DestroyRef. A draft is only cleared after its send is
+acknowledged; uncertain delivery retains clientMessageId for a safe retry. Drafts
+are scoped by conversation in the view model. They are not persisted across a full
+page reload. The feed follows new messages only when near the bottom.
 
-The data flow is API → singleton store → scoped VM → component template.
-User intents flow from presentation outputs → orchestration/VM → store → API.
-App is a thin public composition entry point. Catalog/dialog components inject
-scoped VMs and UI integration such as MatDialog. Cards/forms inject no server state.
-Forms accept a typed FormGroup from the owning scoped VM; this demonstrates nested
-presentation without putting forms in singleton state.
+## Boundaries and contracts
+HTTP uses /api/ai-chat/conversations and /socket-ticket. WebSocket uses the shell
+origin at /api/ai-chat/socket with ws/wss selected from the page scheme. Tickets
+are sent in an authenticate frame, never in a URL. There is no Socket.IO wrapper.
+See the producer's generated ChatCommandDto, ChatEventDto, ConversationDto,
+ChatMessageDto and ChatPartDto. Snapshot events carry full canonical state; higher
+revisions replace older state. Reconnect resubscribes to recover missed updates.
+On ready, authenticated principal changes clear cached conversations; auth failure
+also clears cached content. Backend ownership remains authoritative.
 
-The store exposes readonly shared signals and owns loading/error/mutation state.
-Its root refresh stream uses switchMap to cancel stale reads and retains successful
-records on read failure. Mutation observables trigger refresh on success; finalize
-releases pending state on completion/error/cancellation. A refresh error after a
-successful write stays a read error, not a failed write that encourages duplicates.
-Scoped command streams use exhaustMap; takeUntilDestroyed ends their requests.
-Editor errors keep the form open and preserve input for retry. Form mapping sends
-false archived and blank description explicitly and validates optional addresses.
+Default socket retries: 6, exponential delay capped at 15 seconds. HTTP/socket
+handshake deadlines: 10 seconds; command acknowledgement: 15 seconds. The UI
+provides manual reconnect and load retry. Opening the MFE starts its connection;
+leaving destroys scoped subscriptions and disconnects, while server runs continue.
 
-## Federation and providers
+Text is rendered through Angular interpolation. Tool parts display plain text;
+A2UI parts display an honest unsupported-content placeholder. No generated HTML,
+JavaScript or A2UI execution is installed yet. The backend streams OpenAI Responses API text. A missing runtime key produces an
+explicit configuration error; model selection and API credentials stay server-side.
 
-Keep named/default App, named Routes, mfe-user-journey-chat, ./Component, ./Routes and
-remoteEntry.js. The route export retains empty-path redirect to hello-world.
-The host supplies HttpClient/session interceptors and Router when it consumes
-Routes. Remote loading does not install standalone appConfig. Standalone bootstrap
-uses App directly and needs no Router because the example has no route navigation.
-It provides zoneless change detection, HTTP and animations. src/styles.scss supplies
-the standalone Material theme; federation does not install this theme in the host.
+## Federation and compatibility
+Named/default App, named Routes, remoteEntry.js, ./Component, ./Routes, remote name
+mfe-user-journey-chat and dependency sharing retain their public identities.
+Both empty path /chat and /chat/hello-world render chat. The host supplies HTTP
+and session interceptors. Standalone appConfig remains available for bootstrap.
+Angular/Material/CDK 21.1.0 and RxJS 7.8.2 remain aligned with the shell.
+Production bundling keeps existing webpack compatibility settings. Font inlining
+is disabled so production builds do not require Google Fonts network access.
 
-Angular/Material/CDK 21.1.0, RxJS 7.8.2 and strict shared versions remain unchanged.
-Production webpack disables module concatenation to preserve Angular identities
-across federation boundaries; the inherited optimized configuration failed at
-runtime with a missing defineInjectable export before this repair.
-Module Federation and ngx-build-plus retain inherited 20-series versions; builds
-and standalone verification do not prove every host combination compatible.
-
-## External contracts
-
-The installed @tmdjr/seed-service-nestjs-contracts 0.0.7 types define the consumer
-DTOs; backend validation defines accepted requests. The stateless API normalizes
-its base URL to /api/example-crud and encodes IDs once for detail paths.
-
-| Method | Browser path | Contract |
-| --- | --- | --- |
-| GET | /api/example-crud | ExampleMongodbDocDto[] |
-| GET | /api/example-crud/:id | ExampleMongodbDocDto |
-| POST | /api/example-crud | CreateExampleMongodbDocDto → document |
-| PATCH | /api/example-crud/:id | UpdateExampleMongodbDocDto → document |
-| DELETE | /api/example-crud/:id | void |
-
-The backend owns persistence/authorization. The seed contains no auth guard and
-does not fabricate credentials or backend behavior. Blank address fields omit
-the address property; PATCH then preserves an existing address. The published
-update DTO provides no null/removal field, so removing an address requires a
-producer contract change. Partial nonblank addresses are invalid locally.
-
-Host/registry owners are mfe-shell-workshop, mfe-shell-admin and
-service-mfe-orchestrator. Gateway owners map the browser API prefix to
-seed-service-nestjs. Package/shared metadata owners are independent repositories.
-No sibling checkout is needed; use local HTTP doubles when services are unavailable.
-
-Build output remains dist/mfe-user-journey-chat. The existing deploy workflow targets
-/opt/mfe-remotes/mfe-user-journey-chat on main. Registration/gateway configuration and
-actual deployment are separate integration work; this change does not execute them.
+Consumer pins published @tmdjr/service-ai-chat-contracts 0.0.5. The preview tarball
+was removed. Its SHA-512 integrity was computed from a reproducible archive whose
+SHA-1 matches the actual registry publication recorded by backend Actions run #5.
+No producer checkout is needed for consumer CI installation.

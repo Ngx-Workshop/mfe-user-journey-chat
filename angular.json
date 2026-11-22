@@ -52,7 +52,12 @@
                 }
               ],
               "outputHashing": "all",
-              "extraWebpackConfig": "webpack.prod.config.js"
+              "extraWebpackConfig": "webpack.prod.config.js",
+              "optimization": {
+                "scripts": true,
+                "styles": true,
+                "fonts": false
+              }
             },
             "development": {
               "optimization": false,

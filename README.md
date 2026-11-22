@@ -1,30 +1,17 @@
 # mfe-user-journey-chat
 
-Angular user-journey remote scaffolded from the Ngx-Workshop seed-mfe-remote template.
+Angular chat remote for NGX Workshop. Includes conversation navigation, message
+feed, composer, connection/retry status, cancellation and extensible typed message
+parts. Uses service-ai-chat for persistence, authentication and WebSocket updates.
+The backend streams OpenAI responses; A2UI rendering remains a future addition.
 
-Use Node.js 22 or newer, matching the seeds.
+Use Node 22 and npm ci. Run npm run dev:bundle for the existing local remote
+workflow. The shell can mount /chat or /chat/hello-world. Its HTTP interceptors
+and Nginx provide same-origin /api/ai-chat access.
 
-## Development
+- [Architecture](docs/architecture.md)
+- [Development and verification](docs/development.md)
+- [Foundation handoff](specs/003-chat-foundation/handoff.md)
 
-```sh
-npm install
-npm run dev:bundle
-# Build:
-npm run build
-# Tests (requires Chrome):
-npm test -- --watch=false --browsers=ChromeHeadless
-```
-
-## Integration
-
-Register in https://admin.ngx-workshop.io/list-mfe-remotes with name mfe-user-journey-chat, role user-journey, and remote URL https://beta.ngx-workshop.io/remotes/mfe-user-journey-chat/remoteEntry.js.
-Use http://localhost:4201/remoteEntry.js for a session-local development override.
-Preserved exports: ./Component (default App) and ./Routes (named Routes).
-Deployment directory: /opt/mfe-remotes/mfe-user-journey-chat/.
-The example client still uses /api/example-crud and the published seed service contracts; replace them when implementing your domain.
-
-## Seed adoption
-
-This is a starting scaffold with inherited example code. Read [seed adoption](docs/seed-adoption.md), [development limitations](docs/development.md), and [integration guidance](WORKSHOP.md). Replace example behavior with your product, adapt tests, and regenerate contracts as needed.
-
-Scaffolding saves seed deployment examples in .ngx-workshop/workflows. Run ngx-workshop deploy . to publish and deploy this project. For services, the CLI updates/pushes Nginx and waits for its deployment to succeed before dispatching service deployment. Configure Actions secrets first; see the CLI deployment guide. Contracts publishing and MFE registration remain separate operations.
+The MFE pins published @tmdjr/service-ai-chat-contracts 0.0.5.
+Backend changes need deployment before this frontend can use the new endpoints.

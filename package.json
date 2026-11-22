@@ -37,9 +37,9 @@
     "@angular/compiler-cli": "21.1.0",
     "@tmdjr/ngx-user-metadata": "21.0.7",
     "@tmdjr/ngx-workshop-logger": "0.4.0",
-    "@tmdjr/seed-service-nestjs-contracts": "0.0.7",
-    "@tmdjr/service-ai-chat-contracts": "0.0.3",
+    "@tmdjr/service-ai-chat-contracts": "0.0.5",
     "@types/jasmine": "~5.1.0",
+    "http-server": "^14.1.1",
     "jasmine-core": "~5.7.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
@@ -47,7 +47,6 @@
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
     "ngx-build-plus": "^20.0.0",
-    "typescript": "~5.9.3",
-    "http-server": "^14.1.1"
+    "typescript": "~5.9.3"
   }
 }

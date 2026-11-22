@@ -1,11 +1,10 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { ExampleMongodbDocListComponent } from './features/example-documents/pages/catalog/example-mongodb-doc-list.component';
-
+import { ChatPageComponent } from './features/chat/pages/chat/chat-page.component';
 @Component({
   selector: 'mfe-user-journey-chat',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ExampleMongodbDocListComponent],
-  template: `<ngx-example-mongodb-doc-list />`,
+  imports: [ChatPageComponent],
+  template: `<ngx-chat-page />`,
   styles: [':host { display: block; }'],
 })
 export class App {}

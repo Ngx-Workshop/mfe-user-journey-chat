@@ -1,56 +1,35 @@
-# Development and verification
+# Chat development
 
-## Build toolchain compatibility
+Use Node 22 (Docker/CI baseline) and the committed lockfile. Keep builder
+@angular-devkit/build-angular 21.2.26 and webpack override 5.105.2 for federation
+license extraction compatibility. Keep license extraction enabled.
 
-Keep `@angular-devkit/build-angular` pinned to `21.2.26` and the npm webpack
-override at `5.105.2`. Builder `21.2.28` uses webpack `5.112.0`, whose federation
-identifiers break `license-webpack-plugin@4.0.2` with an undefined `trim` error.
-Both pins keep one compatible webpack runtime. Keep license extraction enabled;
-validate a normal production build and non-empty `3rdpartylicenses.txt` before
-removing these pins after an upstream fix.
-Regenerate the lockfile with CI's Node 22/npm 10, then verify with `npm ci`;
-npm 11 can omit optional peer entries required by npm 10.
+| Purpose | Command |
+| --- | --- |
+| Install | npm ci |
+| Serve | npm start |
+| Bundle watcher | npm run dev:bundle |
+| Architecture | npm run check:architecture |
+| Types | npx tsc --noEmit --noUnusedLocals --noUnusedParameters -p tsconfig.app.json |
+| Test types | npx tsc --noEmit -p tsconfig.spec.json |
+| Tests | npm test -- --watch=false --browsers=ChromeHeadless |
+| Isolated production build | npm run build -- --output-path dist/chat-verification |
 
-Use Node 22 (CI baseline) and the committed lockfile. Private registry access may
-be needed for npm ci; no sibling repository is required.
+Do not overwrite an active watcher's dist output during verification. Existing
+session-local remote override can serve localhost:4201/remoteEntry.js in the shell.
+Direct standalone serving needs an explicit local gateway for /api; there is no
+hardcoded production-service URL or fake backend in this remote.
 
-| Purpose | Command | Notes |
-| --- | --- | --- |
-| Install | `npm ci` | Uses existing dependency versions |
-| Architecture | `npm run check:architecture` | Folder/API/state/inline/BEM/typed-code guard; >230 component lines requests review |
-| Dev server | `npm start` | Port 4201; no backend supplied |
-| Local bundle | `npm run dev:bundle` | Production watch + static CORS server; avoid competing servers |
-| Build | `npm run build` | Production federation bundle |
-| Isolated build | `npm run build -- --output-path dist/starter-verification` | Avoid overwriting an existing watcher output |
-| Tests | `npm test -- --watch=false --browsers=ChromeHeadless` | HTTP doubles; set CHROME_BIN when needed |
-| Types | `npx tsc --noEmit --noUnusedLocals --noUnusedParameters -p tsconfig.app.json` | Source types/unused symbols |
+Tests use HTTP/WebSocket doubles; frontend tests do not authenticate against the
+real service. The normal Karma/Chrome suite requires permission to open local
+ports. In the implementation sandbox the test runner aborted (exit 134) during
+startup; test types and production build are separate successful checks, not a
+substitute for executed browser tests. See specs/003-chat-foundation/handoff.md.
 
-Specs are under testing/app, mirroring src/app; synthetic DTOs live in
-testing/fixtures. See [testing guide](../testing/README.md) for focused commands.
+Published @tmdjr/service-ai-chat-contracts 0.0.5 is pinned in package/lockfile.
+The generated preview tarball was removed after successful publication.
 
-## Verification and automation
-
-Architecture checks complement compiler/tests and do not replace full lint or code
-review. The lightweight script checks explicit source conventions, not every
-semantic dependency. CI runs architecture checks, ChromeHeadless tests and a
-production build. Deployment also runs the architecture guard before building.
-Auth/gateway/host integration must be verified separately with test records.
-No end-to-end framework or general-purpose lint dependency is introduced.
-
-For UI changes inspect loading/empty/error/success states, keyboard form submission,
-validation, dialog retry and narrow layouts. Static bundle serving does not proxy
-/api; supply an explicit local gateway or synthetic fixtures. Host development
-uses the platform's session-local remote override for localhost:4201/remoteEntry.js.
-Standalone appConfig is not installed by host remote loading.
-
-## Current limits and repaired starter defects
-
-The obsolete title test, component API coupling, missing subscription teardown,
-optimized Angular federation initialization, missing standalone Material theme,
-double-slash detail URLs, unsafe casts, partial-address acceptance and false/blank
-update omission are repaired. Save failures retain the editor and its values.
-The generated DTO does not support removing a stored address; blank address edits
-preserve it and the UI explains this. No auth policy, producer change, deployment
-or live-data test is part of this starter upgrade.
-
-See [001 handoff](../specs/001-mvvm-starter/handoff.md) for actual results and limits.
+Manual integration acceptance: sign in, create a conversation, send input, confirm
+it persists after reload, inspect a failed unconfigured-provider response, and
+verify ownership with a different account. Disconnect/reconnect during a streaming run and stop a partial response. Test keyboard
+submission, Shift+Enter, narrow layout, load errors and draft retention.

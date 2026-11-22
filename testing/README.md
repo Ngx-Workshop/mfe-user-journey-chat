@@ -1,19 +1,10 @@
-# Seed example tests
+# Chat tests
 
-Specs live outside production source. testing/app mirrors src/app; fixtures live
-under testing/fixtures. Runtime code must not import testing. Move matching specs
-and update imports when feature folders change.
+Specs mirror src/app/features/chat under testing/app/features/chat. Fixtures are
+synthetic; runtime never imports tests. The suite covers connection authentication,
+acknowledgement correlation, uncertain sends/retry, expired auth, revision ordering,
+resubscription, draft preservation, empty/loading/error UI and conversation creation.
 
-Run the full suite with `npm test -- --watch=false --browsers=ChromeHeadless`.
-Run a focused suite with:
-
-```sh
-npm test -- --watch=false --browsers=ChromeHeadless \
-  --include='../testing/app/features/example-documents/forms/example-form.service.spec.ts'
-```
-
-Karma discovery is relative to src: angular.json includes ../testing/**/\*.spec.ts.
-The test compiler includes testing/**/_.ts plus src/\**/_.d.ts and compiles app
-modules through imports. The production compiler excludes specs/testing.
-HTTP doubles verify client mappings, shared state cancellation/retry, form
-validation/update semantics, scoped editor commands and actual app rendering.
+Run npm test -- --watch=false --browsers=ChromeHeadless. This requires a Chrome
+binary and local listening ports. npx tsc --noEmit -p tsconfig.spec.json checks
+spec types without executing a browser; report those checks separately.
