@@ -26,10 +26,20 @@ ports. In the implementation sandbox the test runner aborted (exit 134) during
 startup; test types and production build are separate successful checks, not a
 substitute for executed browser tests. See specs/003-chat-foundation/handoff.md.
 
-Published @tmdjr/service-ai-chat-contracts 0.0.5 is pinned in package/lockfile.
+Published @tmdjr/service-ai-chat-contracts 0.0.7 is pinned in package/lockfile.
 The generated preview tarball was removed after successful publication.
 
 Manual integration acceptance: sign in, create a conversation, send input, confirm
 it persists after reload, inspect a failed unconfigured-provider response, and
 verify ownership with a different account. Disconnect/reconnect during a streaming run and stop a partial response. Test keyboard
 submission, Shift+Enter, narrow layout, load errors and draft retention.
+
+## A2UI verification
+The integration workflow runs npm ci, architecture checks, real ChromeHeadless
+tests and a production build before promotion. Fixtures are server-built A2UI
+plans, quizzes and cards. Browser tests render the official custom elements,
+check a checkbox, click Save checklist, assert bound values and preserve the
+processor across equal-revision snapshots. Validation rejects unsupported
+components, functions, navigation and cyclic graphs. Full production acceptance
+requires a signed-in browser; the automation browser currently redirects to login.
+See specs/004-a2ui-learning/handoff.md for run IDs and actual results.

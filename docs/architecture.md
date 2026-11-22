@@ -38,10 +38,21 @@ handshake deadlines: 10 seconds; command acknowledgement: 15 seconds. The UI
 provides manual reconnect and load retry. Opening the MFE starts its connection;
 leaving destroys scoped subscriptions and disconnects, while server runs continue.
 
-Text is rendered through Angular interpolation. Tool parts display plain text;
-A2UI parts display an honest unsupported-content placeholder. No generated HTML,
-JavaScript or A2UI execution is installed yet. The backend streams OpenAI Responses API text. A missing runtime key produces an
-explicit configuration error; model selection and API credentials stay server-side.
+Text uses Angular interpolation. A2UI v1.0 surfaces render through official
+@a2ui/lit and @a2ui/web_core 0.15.0 inside a standalone Angular host. A scoped view
+model owns the processor and teardown; unchanged message/surface/revision keys
+preserve local choices across streaming snapshots. The restricted basic catalog
+allows Column, Text, Card, Button, CheckBox, ChoicePicker and Divider, with no
+renderer functions. Validation bounds the graph, bindings, actions and state;
+unsupported content has a readable fallback. Text widgets use the renderer's
+escaped plain-text fallback; Markdown HTML rendering is not enabled.
+
+Actions emit typed intent through the feed/page/view model to ChatStore and the
+existing authenticated socket. Quiz/checklist feedback is server-persisted; prompt
+buttons use stored server prompts. Workshop navigation accepts only the internal
+workshop route and validated IDs. Actions are disabled during running/disconnected
+states. Welcome starters request plans, quizzes and real workshop recommendations.
+Model selection, catalog access and API credentials remain server-side.
 
 ## Federation and compatibility
 Named/default App, named Routes, remoteEntry.js, ./Component, ./Routes, remote name
@@ -52,7 +63,7 @@ Angular/Material/CDK 21.1.0 and RxJS 7.8.2 remain aligned with the shell.
 Production bundling keeps existing webpack compatibility settings. Font inlining
 is disabled so production builds do not require Google Fonts network access.
 
-Consumer pins published @tmdjr/service-ai-chat-contracts 0.0.5. The preview tarball
-was removed. Its SHA-512 integrity was computed from a reproducible archive whose
-SHA-1 matches the actual registry publication recorded by backend Actions run #5.
-No producer checkout is needed for consumer CI installation.
+Consumer pins published @tmdjr/service-ai-chat-contracts 0.0.7. Its reproducible
+archive SHA-1 matches publication evidence from backend Actions run #7. No producer
+checkout is required for consumer CI installation. The Lit renderer avoids the
+Angular ^21.2.5 peer requirement of the current official Angular renderer.
