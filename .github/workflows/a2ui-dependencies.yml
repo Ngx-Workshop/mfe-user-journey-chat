@@ -1,0 +1,48 @@
+name: Prepare A2UI dependencies
+on:
+  push:
+    branches: [codex/a2ui-experience]
+permissions:
+  contents: write
+jobs:
+  dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: codex/a2ui-experience
+          persist-credentials: true
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Install pinned official A2UI packages
+        run: |
+          cp package-lock.json /tmp/previous-lock.json
+          npm install --save-exact @a2ui/lit@0.16.0 @a2ui/web_core@0.16.0
+          python3 - <<'PY'
+          import json, tarfile
+          from pathlib import Path
+          old=json.loads(Path('/tmp/previous-lock.json').read_text())['packages']
+          new=json.loads(Path('package-lock.json').read_text())['packages']
+          paths=[p for p,v in new.items() if p.startswith('node_modules/') and (p not in old or old[p].get('version')!=v.get('version')) and Path(p).exists()]
+          with tarfile.open('a2ui-dependencies.tar.gz','w:gz') as archive:
+              for p in paths:
+                  if not any(p.startswith(other+'/') for other in paths if other!=p):
+                      archive.add(p)
+          PY
+      - name: Record resolved dependency manifests
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git diff --cached --quiet || git commit -m "Pin resolved A2UI runtime dependencies [skip ci]"
+          git push origin HEAD:codex/a2ui-experience
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: a2ui-dependencies
+          path: |
+            a2ui-dependencies.tar.gz
+            package.json
+            package-lock.json
+          retention-days: 1
