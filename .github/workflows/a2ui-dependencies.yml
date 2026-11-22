@@ -3,7 +3,7 @@ on:
   push:
     branches: [codex/a2ui-experience]
 permissions:
-  contents: write
+  contents: read
 jobs:
   dependencies:
     runs-on: ubuntu-latest
@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: codex/a2ui-experience
-          persist-credentials: true
+          persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: '22'
@@ -19,7 +19,7 @@ jobs:
       - name: Install pinned official A2UI packages
         run: |
           cp package-lock.json /tmp/previous-lock.json
-          npm install --save-exact @a2ui/lit@0.16.0 @a2ui/web_core@0.16.0
+          npm install --ignore-scripts --save-exact @a2ui/lit @a2ui/web_core
           python3 - <<'PY'
           import json, tarfile
           from pathlib import Path
@@ -31,13 +31,6 @@ jobs:
                   if not any(p.startswith(other+'/') for other in paths if other!=p):
                       archive.add(p)
           PY
-      - name: Record resolved dependency manifests
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json
-          git diff --cached --quiet || git commit -m "Pin resolved A2UI runtime dependencies [skip ci]"
-          git push origin HEAD:codex/a2ui-experience
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: a2ui-dependencies
