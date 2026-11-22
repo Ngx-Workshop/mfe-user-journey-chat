@@ -18,4 +18,4 @@ the largest folder number is not automatically the active feature.
 
 - [002-static-deployment-cleanup](002-static-deployment-cleanup/spec.md): Static deployment cleanup; helper tests, Actions rollout and live Nginx entrypoints verified.
 
-- [003 Chat foundation](003-chat-foundation/spec.md): Implemented; integration pending.
+- [003 Chat foundation](003-chat-foundation/spec.md): Deployed; live UI smoke test pending.
